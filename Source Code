@@ -1,0 +1,207 @@
+//with while loop and interrupt and master clear
+const unsigned int hight = 10;
+unsigned int reads=0;
+int cccc = 10;
+int count;
+//int dec;
+unsigned int DelayCntr;
+unsigned int dutyCycle;
+
+//PWM RC2 and RC1
+void MymsDelay(unsigned int d){
+     DelayCntr = 0;
+     OPTION_REG = 0x82;         // Prescale of 8
+     TMR0 =6 ;                  // Overflow every 1ms >> start at 6
+     INTCON = INTCON | 0xA0;    // Enable TMR0 overflow interrupt
+     while(DelayCntr<d);
+     INTCON = INTCON & 0xDF;    // Disable TMR0 overflow interrupt
+}
+
+void MymsDelay1(unsigned int d){
+     DelayCntr = 0;
+     OPTION_REG = 0x82;         // Prescale of 8
+     TMR0 =6 ;                  // Overflow every 1ms >> start at 6
+     INTCON = INTCON | 0xA0;    // Enable TMR0 overflow interrupt
+     while(DelayCntr<d);
+     INTCON = INTCON & 0xDF;    // Disable TMR0 overflow interrupt
+}
+
+void initPWM_RC1_RC2() {
+
+    // Configure Timer2 for PWM
+    T2CON=T2CON | 0X07;
+    // Set PR2 to achieve the desired PWM frequency
+    PR2 = 199;  // For a 4MHz oscillator, PR2 value for 500Hz PWM frequency
+
+    // Set the initial duty cycle to 0%
+    CCPR1L = 0;  //RC2
+    CCPR2L=0;   //RC1
+
+    // Configure CCP1 & CCP2 for PWM mode
+   CCP1CON=CCP1CON|0x0C;  //RC2
+   CCP2CON=CCP2CON|0x0C;  //RC1
+}
+
+// Function to update PWM duty cycle
+void updatePWM(unsigned char dutyCycle, unsigned char pwmChannel) {
+    if (pwmChannel == 1) {
+        CCPR2L = dutyCycle;  // Update duty cycle value for RC1
+    } else if (pwmChannel == 2) {
+        CCPR1L = dutyCycle;  // Update duty cycle value for RC2
+    }else{
+       CCPR2L = dutyCycle;  // Update duty cycle value for RC1
+       CCPR1L = dutyCycle;  // Update duty cycle value for RC2
+    }
+}
+
+
+void ADC_inititialize(void){
+ADCON1=0XC0; // Right Justify, Fosc/16, ALL PORTA and PORTE are Analog
+ADCON0=0X49; // ADC ON, CHANNEL 1, Fosc/16
+CMCON |=7;          // Disable comparator;
+}
+
+int read_WaterLevel(){
+unsigned int read=0;
+ADCON0 = ADCON0 | 0x04;// GO
+while( ADCON0 & 0x04);
+read = (ADRESH<<8)|ADRESL;
+read = (6050 / read);
+if(read >= 2) read -= 2;
+if(read < 10) read = 10;
+if(read > 80) read = 80;
+return read;
+}
+
+
+void BuzzerON(void) {
+cccc = 5;
+for (cccc;cccc>0;cccc--){
+PORTD = PORTD | 0X10;
+MymsDelay(1000);
+PORTD = PORTD & 0XEF;
+MymsDelay(1000);
+}
+}
+
+
+void sensor_turn_on (unsigned int c) {
+TRISA= 0XFF;
+PORTA=0X00;
+reads=read_WaterLevel();
+count=750;
+dutyCycle=255;
+//dec=1;
+
+if(c==1){
+while (count >0){
+    while(reads > hight){
+    TRISC=0XFD;  // turn on pump on RC1 1111 1101
+    reads=read_WaterLevel();
+    updatePWM(dutyCycle,1);
+    dutyCycle=dutyCycle-7;
+    MymsDelay(550);
+    reads=read_WaterLevel();
+     }
+    count=count-1;
+    }
+
+}else if (c==2) {
+while (count > 0){
+     while(reads > hight){
+    TRISC=0XFB; // turn on pump on RC2 1111 1011
+    updatePWM(dutyCycle,2);
+    dutyCycle=dutyCycle-8;
+    MymsDelay(550);
+    reads=read_WaterLevel();
+    }
+count = count-1;
+}
+
+}else if (c==3) {
+while ( count > 0){
+    while(reads > hight){
+    TRISC=0XF9;  // turn on both pumps 1111 1001
+    updatePWM(dutyCycle,3);
+    dutyCycle=dutyCycle-10;
+    MymsDelay(400);
+    reads=read_WaterLevel();
+    }
+count = count -1;
+}
+}
+
+TRISC=0XFF; // 1111 1111 Turns off all pumps
+BuzzerON();
+}
+
+void interrupt(void){
+     if ( INTCON & 0x02) {  // EXTERNAL INTERRUPT
+      unsigned char tempC=TRISC;
+      TRISC=0XFF; //11111 1111 Turns off all pumps
+      cccc = 5;
+      for (cccc;cccc>0;cccc--){
+      PORTD=PORTD & 0XF8;  // TURN OFF LIGHTS
+      //MymsDelay1(1000);
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      PORTD=PORTD | 0x07;   // TURN ON LIGHTS
+      //MymsDelay1(1000);
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      delay_100ms();
+      }
+       TRISC=tempC;
+      INTCON=INTCON & 0XFD; //1111 1101 clear INTF flag
+      }
+       if ( INTCON & 0X04){ // TIMER OVERFLOW
+      TMR0 = 6;
+      DelayCntr++;
+      INTCON = INTCON & 0xFB;
+      }
+      }
+
+
+
+void main (void) {
+STATUS = STATUS | 0X20;
+TRISB= 0XE1; //1110 001 RB7,RB6,RB5 are inputs (push bottuns) RB0 input is interrupt
+TRISC= 0XFF; //1111 1001 RC1,RC2 outputs (pumps)
+TRISD = 0XE8; //1110 1000 RD0,RD1,RD2 are outputs (LEDs), RD4 buzzer output
+INTCON=0X90; // enable the global interrupt and the external interrupt
+ADC_inititialize();
+initPWM_RC1_RC2();
+STATUS = STATUS & 0XDF;
+PORTB=0x00;
+PORTC=0X00;
+PORTD=0X0F;  // all lights on, buzzer off
+
+while(1) {
+if ( PORTB & 0X20 ){
+sensor_turn_on(1);
+} else if ( PORTB & 0X40){
+sensor_turn_on(2);
+}else if ( PORTB & 0X80) {
+sensor_turn_on(3);
+
+}else{
+TRISC=0XFF; //1111 1111 Turns off all pumps;
+
+}
+}
+}
