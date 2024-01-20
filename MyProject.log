@@ -1,0 +1,12 @@
+0	1	mikroCPIC1618.exe -MSF -DBG -pP16F877A -DL -O11111114 -fo8 -N"C:\Users\user1\Desktop\MyProject.mcppi" -SP"C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for PIC\Defs\" -SP"C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for PIC\Uses\P16\" -SP"C:\Users\user1\Desktop\" -IP"C:\Users\Public\Documents\Mikroelektronika\mikroC PRO for PIC\Uses\P16\" -IP"C:\Users\user1\Desktop\" "MyProject1.c" "__Lib_Math.mcl" "__Lib_MathDouble.mcl" "__Lib_System.mcl" "__Lib_Delays.mcl" "__Lib_CType.mcl" "__Lib_CString.mcl" "__Lib_CStdlib.mcl" "__Lib_Conversions.mcl" "__Lib_LcdConsts.mcl" "__Lib_Lcd.mcl"	 
+hint: 0	1139	Available RAM: 352 [bytes], Available ROM: 8192 [bytes]	 
+diagnostics: 0	122	Compilation Started	MyProject1.c
+error: 33	305	Inconsistent type	MyProject1.c
+error: 33	396	Invalid declarator expected'(' or identifier	MyProject1.c
+error: 34	300	Syntax Error: ')' expected,  but '&' found	MyProject1.c
+error: 35	300	Syntax Error: ')' expected,  but ';' found	MyProject1.c
+error: 35	402	; expected, but '}' found	MyProject1.c
+error: 36	371	Specifier needed	MyProject1.c
+error: 36	396	Invalid declarator expected'(' or identifier	MyProject1.c
+warning: 66	1503	Result is not defined in function: ''	MyProject1.c
+error: 0	102	Finished (with errors): 21 May 2023, 17:43:54	MyProject.mcppi
